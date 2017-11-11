@@ -58,8 +58,9 @@ def yosys(inputfile, args):
     #    subprocess.run(['yosys', '-Q', '-p synth_ice40 -blif %s' % blif, 
     #                    inputfile])
     #else:
-    subprocess.run(['yosys', '-Q', '-p synth_ice40 -blif %s' % blif, 
+    subprocess.run(['yosys', '-Q', '-q', '-p synth_ice40 -blif %s' % blif, 
                         inputfile, *args])
+    print("########## SYNTHESIS FINISHED ###########")
     return blif
 
 def arachne_pnr(inputfile, const):
@@ -68,12 +69,16 @@ def arachne_pnr(inputfile, const):
     constfile = const
     subprocess.run(['arachne-pnr', '-d', '1k', '-o', pnr, '-p', constfile,
                     '-P', 'vq100', inputfile])
+    print("######### PLACE AND ROUTE COMPLETE ########")
     return pnr
 
 def icepack(inputfile):
     '''Packing into a .bin for programming'''
     bin_file = inputfile[:-4] + '.bin'
     subprocess.run(['icepack', inputfile, bin_file])
+    print("#########################\n"
+          "#### FPGA FILE READY ####\n"
+          "#########################")
     return bin_file
     
 
