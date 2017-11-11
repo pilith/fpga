@@ -1,54 +1,71 @@
+#!/usr/bin/python3
+
 ####################
 # Program Go-Board #
 ####################
 
-#!/usr/bin/python3
 import sys
 import getopt
 import subprocess
 import re
 
 def main():
-    verilog = ''  # original fpga verilog file
-    constfile = ''  # constraints .pcf file
+    fpga_top = ''       # Top level verilog project file
+    fpga_module = []    # optional fpga module files
+    constfile = ''      # constraints .pcf file
     try:
-         opts, args = getopt.getopt(sys.argv[1:], "hi:p:")
+         opts, args = getopt.getopt(sys.argv[1:], "ht:p:")
     except getopt.GetoptError:
-         print('fpga_build.py \n' 
-               '-i <input file> \n'
+         print('fpga_build.py ' 
+               '-t <input file> \n'
                '-p <constraints file> \n'
-               )
+               '\n'
+               'List module files last, with a space between each file.')
+
     for opt, arg in opts:
         if opt == '-h':
             print('Help Text')
             print('fpga_build.py \n'
-             '-i <input file> \n'
-             '-p <constraints file> \n'
-             )
+               '-t <input file> \n'
+               '-p <constraints file> \n'
+               '\n'
+               'List module files last, with a space between each file.')
             sys.exit()
-        elif opt == '-i':
-            verilog = arg
+        elif opt == '-t':
+            fpga_top = arg
         elif opt == '-p':
             constfile = arg
-    print(verilog)
-    print(constfile)
-    blif = yosys(verilog)
+        elif opt == '-m':
+            fpga_module = arg
+    
+    if len(sys.argv) >= 3:
+        for a in sys.argv[3:]:
+            fpga_module.append(a)
+    
+    if not fpga_module:
+        blif = yosys(fpga_top)
+    else:
+        blif = yosys(fpga_top, fpga_module)
     asc = arachne_pnr(blif, constfile)
     fpga_file = icepack(asc)
         
 
-def yosys(inputfile):
-    '''Synthesizing the verilog file, defaults are for NANDLAND GO-Board'''
+def yosys(inputfile, args):
+    '''Synthesizing the fpga_top file, defaults are for NANDLAND GO-Board'''
     yosys_filename = re.search('^.*(?=(.v))', inputfile)
     blif = yosys_filename.group(0) + '.blif'
-    subprocess.run(['yosys', '-p synth_ice40 -blif %s' % blif, inputfile])
+    #if not module:
+    #    subprocess.run(['yosys', '-Q', '-p synth_ice40 -blif %s' % blif, 
+    #                    inputfile])
+    #else:
+    subprocess.run(['yosys', '-Q', '-p synth_ice40 -blif %s' % blif, 
+                        inputfile, *args])
     return blif
 
 def arachne_pnr(inputfile, const):
     '''Place and Route after synthesis'''
     pnr = inputfile[:-5] + '.asc'
     constfile = const
-    print(constfile + '\n' + pnr)
     subprocess.run(['arachne-pnr', '-d', '1k', '-o', pnr, '-p', constfile,
                     '-P', 'vq100', inputfile])
     return pnr
@@ -62,6 +79,18 @@ def icepack(inputfile):
 
 if __name__ == '__main__':
     # Executes only if run as script
+    # Check and see if any arguments are passed. print help if no
+    try:
+        arg1 = sys.argv[1]
+    except IndexError:
+        print('fpga_build.py \n' 
+               '-t <input file> \n'
+               '-p <constraints file> \n'
+               '\n'
+               'List module files last, with a space between each file.'
+             )
+        sys.exit(1)
     main()
+
 
 
