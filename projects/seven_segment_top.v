@@ -35,7 +35,7 @@ module seven_segment_top
         // When switch pushed, increment
         if (w_Switch_1 == 1'b1 && r_Switch_1 == 1'b0)
         begin
-            if (r_Count == 9)
+            if (r_Count == 15)
                 r_Count <= 0;
             else
                 r_Count <= r_Count + 1;
